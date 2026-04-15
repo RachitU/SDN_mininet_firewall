@@ -70,7 +70,14 @@ class SDNFirewall(app_manager.RyuApp):
                 "description": "Positive connectivity case for demo",
             },
         ]
-
+        self.mac_block_policies = [
+            {
+                "name": "Block MAC of h3",
+                "src_mac": "00:00:00:00:00:03",
+                "action": "deny",
+                "priority": 340
+            }
+        ]
         self._ensure_files()
         self._dump_rules()
         self._log_event("Controller initialized")
@@ -96,7 +103,17 @@ class SDNFirewall(app_manager.RyuApp):
         with open(self.events_file, "a", encoding="utf-8") as f:
             f.write(f"{ts},{event}\n")
         self.logger.info(event)
+        
+    def install_mac_block_rules(self, datapath):
+        parser = datapath.ofproto_parser
 
+        for rule in self.mac_block_policies:
+            if rule["action"] != "deny":
+                continue
+
+            match = parser.OFPMatch(eth_src=rule["src_mac"])
+            self.add_drop_flow(datapath, rule["priority"], match)
+            self.logger.info("Installed MAC DENY rule: %s", rule["name"])
     def _write_block_log(self, src_ip, dst_ip, proto, src_port, dst_port, rule_name):
         line = f"{datetime.now().isoformat()},{src_ip},{dst_ip},{proto},{src_port},{dst_port},{rule_name}\n"
         with open(self.log_file, "a", encoding="utf-8") as f:
@@ -121,6 +138,7 @@ class SDNFirewall(app_manager.RyuApp):
         self.add_flow(datapath, 200, match_arp, actions_arp)
 
         self.install_firewall_rules(datapath)
+        self.install_mac_block_rules(datapath)
         self._log_event(f"Switch s{datapath.id} connected and base rules installed")
 
     @set_ev_cls(ofp_event.EventOFPStateChange, [MAIN_DISPATCHER, DEAD_DISPATCHER])
