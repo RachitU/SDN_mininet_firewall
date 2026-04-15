@@ -1,0 +1,8 @@
+mininet> nodes
+mininet> net
+mininet> h1 ping -c 3 h2
+mininet> h1 ping -c 3 h3
+mininet> h4 python3 -m http.server 80 &
+mininet> h2 curl 10.0.0.4
+mininet> h2 iperf -s &
+mininet> h1 iperf -c 10.0.0.2

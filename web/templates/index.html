@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDN Firewall Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div class="bg-glow one"></div>
+  <div class="bg-glow two"></div>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Software Defined Networking • OpenFlow 1.3 • Ryu + Mininet</p>
+      <h1>SDN Firewall Command Center</h1>
+      <p class="sub">A polished dashboard for demoing controller-driven access control, packet filtering, flow monitoring, and blocked traffic logs.</p>
+    </div>
+    <div class="badge">Live Demo Ready</div>
+  </header>
+
+  <section class="metric-grid">
+    <div class="metric-card"><span>Firewall Rules</span><strong>{{ metrics.rules }}</strong></div>
+    <div class="metric-card"><span>Blocked Packets Logged</span><strong>{{ metrics.blocked_packets }}</strong></div>
+    <div class="metric-card"><span>Active Flow Entries</span><strong>{{ metrics.active_flows }}</strong></div>
+    <div class="metric-card"><span>Hosts in Topology</span><strong>{{ metrics.hosts }}</strong></div>
+  </section>
+
+  <main class="grid">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Installed Security Policies</h2>
+        <span>Static rules loaded by controller</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Source</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rule in rules %}
+            <tr>
+              <td>#{{ rule.id }}</td>
+              <td>{{ rule.name }}</td>
+              <td>{{ rule.src_ip }}</td>
+              <td>{{ rule.dst_ip }}</td>
+              <td>{{ rule.ip_proto if rule.ip_proto is not none else 'ANY' }}</td>
+              <td>{{ rule.dst_port if rule.dst_port is not none else 'ANY' }}</td>
+              <td><span class="pill deny">{{ rule.action|upper }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Recent Blocked Traffic</h2>
+        <span>Controller-generated packet log</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th><th>Source</th><th>Destination</th><th>Proto</th><th>D-Port</th><th>Rule</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if blocked %}
+              {% for row in blocked %}
+              <tr>
+                <td>{{ row.timestamp }}</td>
+                <td>{{ row.src_ip }}</td>
+                <td>{{ row.dst_ip }}</td>
+                <td>{{ row.proto }}</td>
+                <td>{{ row.dst_port }}</td>
+                <td>{{ row.rule }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="6">No blocked packets yet. Trigger the blocked test cases in Mininet.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Flow Statistics Snapshot</h2>
+        <span>Updated by the monitor thread</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Priority</th><th>Packets</th><th>Bytes</th><th>Match</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if stats %}
+              {% for stat in stats %}
+              <tr>
+                <td>{{ stat.priority }}</td>
+                <td>{{ stat.packet_count }}</td>
+                <td>{{ stat.byte_count }}</td>
+                <td class="mono">{{ stat.match }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr><td colspan="4">No flow stats yet. Start Mininet and generate traffic.</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Controller Event Feed</h2>
+        <span>Quick presenter-friendly summary</span>
+      </div>
+      <ul class="event-feed">
+        {% if events %}
+          {% for event in events %}
+          <li>{{ event }}</li>
+          {% endfor %}
+        {% else %}
+          <li>No events yet. Once the switch connects, rule installation and traffic activity will appear here.</li>
+        {% endif %}
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
